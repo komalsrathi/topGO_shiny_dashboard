@@ -140,8 +140,16 @@ shinyServer(function(input, output, session){
       need(fg$fc, "Check Input...!!")
     )
     # new method
-    all_genes <- ifelse(test = min(fg$fc)>0, yes = all_genes <- limma[which(limma$fc>0),], no = all_genes <- limma[which(limma$fc<0),])
-    limma <- limma[which(limma$ID %in% all_genes[[1]]),]
+    #all_genes <- ifelse(test = min(fg$fc)>0, yes = all_genes <- limma[which(limma$fc>0),], no = all_genes <- limma[which(limma$fc<0),])
+    #limma <- limma[which(limma$ID %in% all_genes[[1]]),]
+    if (input$cutoff=='pos') {
+      limma <- limma[which(limma$fc>0),]
+    } else if (input$cutoff=='neg') {
+      limma <- limma[which(limma$fc<0),]
+    } else if(input$cutoff=='both') {
+      limma <- limma      
+    } 
+    
     all_genes <- limma$adj.P.Val
     names(all_genes) <- limma$ID
     interesting_genes <- as.character(fg$ID)
@@ -278,6 +286,7 @@ shinyServer(function(input, output, session){
   
   # get GO associated genes 
   datasetInput6 <- reactive({
+    limma <- datasetInput() #
     d <- datasetInput3()
     s <- input$results_rows_selected
     goid <- d[s, , drop = FALSE]
@@ -299,6 +308,9 @@ shinyServer(function(input, output, session){
       dd = cbind(.id=goid,dd)
     }
     dd <- merge(dd,d[,1:2],by.x='.id',by.y='GO.ID')
+    
+    dd <- dd[,c(1,2,ncol(dd))] #
+    dd <- merge(limma, dd, by.x='ID', by.y='Chip.ID') #
     dd
   })
   
@@ -526,5 +538,5 @@ shinyServer(function(input, output, session){
     dd <- datasetInput7()
     updateSelectInput(session = session, inputId = "projects", choices = as.character(dd$Project), selected = "none")
   })
-  
+
 })

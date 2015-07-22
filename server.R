@@ -140,8 +140,8 @@ shinyServer(function(input, output, session){
       need(fg$fc, "Check Input...!!")
     )
     # new method
-    #all_genes <- ifelse(test = min(fg$fc)>0, yes = all_genes <- limma[which(limma$fc>0),], no = all_genes <- limma[which(limma$fc<0),])
-    #limma <- limma[which(limma$ID %in% all_genes[[1]]),]
+    # all_genes <- ifelse(test = min(fg$fc)>0, yes = all_genes <- limma[which(limma$fc>0),], no = all_genes <- limma[which(limma$fc<0),])
+    # limma <- limma[which(limma$ID %in% all_genes[[1]]),]
     if (input$cutoff=='pos') {
       limma <- limma[which(limma$fc>0),]
     } else if (input$cutoff=='neg') {
@@ -308,9 +308,8 @@ shinyServer(function(input, output, session){
       dd = cbind(.id=goid,dd)
     }
     dd <- merge(dd,d[,1:2],by.x='.id',by.y='GO.ID')
-    
-    dd <- dd[,c(1,2,ncol(dd))] #
-    dd <- merge(limma, dd, by.x='ID', by.y='Chip.ID') #
+    dd <- dd[,c(1,2,ncol(dd))]
+    dd <- merge(limma, dd, by.x='ID', by.y='Chip.ID')
     dd
   })
   

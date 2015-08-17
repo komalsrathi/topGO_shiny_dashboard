@@ -5,6 +5,7 @@ library(topGO)
 library(mogene20sttranscriptcluster.db)
 library(mogene10sttranscriptcluster.db)
 library(hugene10sttranscriptcluster.db)
+library(hugene11sttranscriptcluster.db)
 library(hugene20sttranscriptcluster.db)
 library(hgu133a.db)
 library(hgu133plus2.db)
@@ -41,28 +42,40 @@ shinyServer(function(input, output, session){
                            title = element_text(face = 'bold',size = 18))
   ###################################### global variables #####################################
   
-##  read in initial data i.e. limma output
-#   datasetInput <- reactive({
-#     infile <- input$FileInput
-#     if(is.null(infile))
-#       return(NULL)
-#     read.table(infile$datapath,header=input$header,sep=input$sep,check.names=F)
-#   })
-  
-  # read input.csv (list of projects)
-  datasetInput <- reactive({
-    validate(
-      need(input$inputdataset, "Input list of datasets")
-    )
-    validate(
-      need(input$projects, "Select a Dataset")
-    )
-    
-    file = paste('data/',as.character(input$projects),'.csv',sep = '')
-    dd = read.csv(file = file)
+  # read in initial data input.csv i.e. a file containing list of projects
+  datainput <- reactive({
+    infile <- input$inputdataset
+    if(is.null(infile))
+      return(NULL)
+    read.csv(infile$datapath,check.names=F)
   })
   
-  # output initial data in tab1
+  # output list of projects in projects tab
+  # you can select any one of the projects
+  output$projects <- DT::renderDataTable({
+    DT::datatable(datainput(), selection = 'single')
+  })
+  
+  # go to tab1 when a project is selected 
+  observe({
+    s <- input$projects_rows_selected
+    if(length(s)){
+      updateTabsetPanel(session = session, inputId = "tabvalue", selected = 'tab1')
+    }
+  })
+  
+  # when a project is selected, the corresponding limma file is opened
+  datasetInput <- reactive({
+    d <- datainput()
+    s <- input$projects_rows_selected
+    dat <- d[s, , drop = FALSE]
+    limma <- as.character(dat$LIMMA)
+    file <- paste('data/',limma,sep='')
+    dd <- read.csv(file=file)
+    dd
+  })
+  
+  # output data for selected project in tab1
   output$table <- DT::renderDataTable({
     DT::datatable(datasetInput(),
                   extensions = c('ColVis','Scroller'), 
@@ -130,18 +143,10 @@ shinyServer(function(input, output, session){
     limma <- datasetInput()
     fg <- datasetInput2()
     
-    #     all_genes <- limma$adj.P.Val
-    #     names(all_genes) <- limma$ID
-    #     interesting_genes <- as.character(fg$ID)
-    #     geneList <- as.logical(names(all_genes) %in% interesting_genes)
-    #     names(geneList) <- names(all_genes)
-    
     validate(
       need(fg$fc, "Check Input...!!")
     )
-    # new method
-    # all_genes <- ifelse(test = min(fg$fc)>0, yes = all_genes <- limma[which(limma$fc>0),], no = all_genes <- limma[which(limma$fc<0),])
-    # limma <- limma[which(limma$ID %in% all_genes[[1]]),]
+    
     if (input$cutoff=='pos') {
       limma <- limma[which(limma$fc>0),]
     } else if (input$cutoff=='neg') {
@@ -155,7 +160,6 @@ shinyServer(function(input, output, session){
     interesting_genes <- as.character(fg$ID)
     geneList <- as.logical(names(all_genes) %in% interesting_genes)
     names(geneList) <- names(all_genes)
-    # new method
     
     topDiffGenes <- function(allScore) {
       return(geneList)
@@ -255,16 +259,15 @@ shinyServer(function(input, output, session){
     GOdata <- datasetInput4()
     res <- datasetInput5()
     showSigOfNodes(GOdata, score(res), firstSigNodes = 3, useInfo = "all")
-    # make firstSigNodes = 5 if necessary
   }
   
   # create topGO plot in tab4
   output$plot <- renderPlot({
     input$makeplot
     withProgress(session = session, message = 'Calculating...',detail = 'This may take a while...',{
-    isolate({
-      plot_out()
-    })
+      isolate({
+        plot_out()
+      })
     })
   })
   
@@ -286,7 +289,7 @@ shinyServer(function(input, output, session){
   
   # get GO associated genes 
   datasetInput6 <- reactive({
-    limma <- datasetInput() #
+    limma <- datasetInput() 
     d <- datasetInput3()
     s <- input$results_rows_selected
     goid <- d[s, , drop = FALSE]
@@ -308,8 +311,9 @@ shinyServer(function(input, output, session){
       dd = cbind(.id=goid,dd)
     }
     dd <- merge(dd,d[,1:2],by.x='.id',by.y='GO.ID')
-    dd <- dd[,c(1,2,ncol(dd))]
-    dd <- merge(limma, dd, by.x='ID', by.y='Chip.ID')
+    
+    dd <- dd[,c(1,2,ncol(dd))] 
+    dd <- merge(limma, dd, by.x='ID', by.y='Chip.ID') 
     dd
   })
   
@@ -333,18 +337,16 @@ shinyServer(function(input, output, session){
   
   # get eset and convert to dataframe
   datasetInputHeatmap <- reactive({
-#     infile <- input$FileInput1
-#     if(is.null(infile))
-#       return(NULL)
-#     dd <- load(infile$datapath)
+    
     validate(
       need(input$inputdataset, "Input list of datasets")
     )
-    validate(
-      need(input$projects, "Select a Dataset")
-    )
     
-    file = paste('data/',as.character(input$projects),'.RData',sep = '')
+    d <- datainput()
+    s <- input$projects_rows_selected
+    dat <- d[s, , drop = FALSE]
+    eset <- as.character(dat$ESET)
+    file <- paste('data/',eset,sep='')
     dd = load(file)
     
     dd <- get(dd)
@@ -398,13 +400,13 @@ shinyServer(function(input, output, session){
     col_ylgnbu <- colorRampPalette(rev(brewer.pal(n = 9, "YlGnBu")))
     dd <- datasetInputHeatmap() 
     dt <- datasetInput6() 
-    dd <- merge(dd,dt[,c(2,4,7)],by.x='row.names',by.y='Chip.ID')
+    dd <- merge(dd,dt[,c(1,2,13)],by.x='row.names',by.y='ID')
     dd <- dd[order(dd$Term),]
     dd <- unique(dd)
     nr <- nrow(dd)
     ids <- as.character(dd$Term)
     annot = data.frame(GO.Term = ids)
-    syms = as.character(dd$Symbol.id)
+    syms = as.character(dd$SYMBOL)
     dd = dd[,-c(1,ncol(dd),ncol(dd)-1)]
     nc = ncol(dd)
     # varH <<- ifelse(nr>=100,varH,round(nr/5))
@@ -464,9 +466,6 @@ shinyServer(function(input, output, session){
   
   v <- reactiveValues(doPlot = FALSE)
   
-#   observeEvent(input$FileInput, {
-#     v$doPlot <- input$FileInput
-#   })  
   observeEvent(input$inputdataset, {
     v$doPlot <- input$inputdataset
   })
@@ -485,12 +484,19 @@ shinyServer(function(input, output, session){
       need(fg, "Check Input...!!")
     )
     
+    genome.chip <- as.character(input$genome)
+    if(length(grep('m',genome.chip))){
+      org <- 'mmu'
+    } else if(length(grep('h',genome.chip))){
+      org <- 'hsa'
+    }
+    
     all_genes = as.numeric(limma$ENTREZID)
     sig_genes = fg$logFC
     names(sig_genes) = fg$ENTREZID 
     sig_genes = sig_genes[complete.cases(names(sig_genes))]
-    sig_genes = sig_genes[unique(names(sig_genes))] # 106
-    spia.res <- spia(de=sig_genes, all=all_genes, organism="mmu")
+    sig_genes = sig_genes[unique(names(sig_genes))] 
+    spia.res <- spia(de=sig_genes, all=all_genes, organism=org)
     spia.res$KEGGLINK <- paste0("<a href='",spia.res$KEGGLINK,"' target='_blank'>",spia.res$KEGGLINK,"</a>")
     spia.res
   })
@@ -512,7 +518,7 @@ shinyServer(function(input, output, session){
                                           "}"),
                         scrollX = TRUE
                       ))
-        })
+      })
     })
   })
   
@@ -537,5 +543,5 @@ shinyServer(function(input, output, session){
     dd <- datasetInput7()
     updateSelectInput(session = session, inputId = "projects", choices = as.character(dd$Project), selected = "none")
   })
-
+  
 })

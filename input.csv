@@ -1,3 +1,8 @@
-Project,Description,limma,eset
-Hdac3KO,Hdac3 Knock Out Mice,Hdac3KO.csv,Hdac3KO.RData
-Ezh2KO,Ezh2 Knock Out Mice,Ezh2KO.csv,Ezh2KO.RData
+Project,Description,LIMMA,ESET,Array
+Hdac3KO,Hdac3 Knock Out Mice,Hdac3KO.csv,Hdac3KO.RData,Mouse Gene 2.0
+Ezh2KO,Ezh2 Knock Out Mice,Ezh2KO.csv,Ezh2KO.RData,Mouse Gene 2.0
+Foxp14DKO,Foxp1 Foxp4 Double Knock Out Mice,Foxp14DKO.csv,Foxp14DKO.RData,Mouse Gene 1.0
+HumanHeart_HFvsNF,Heart Failure vs. Non-Failing,HumanHeart_HFvsNF.csv,HumanHeart_eset.RData,Human Gene 1.1
+HumanHeart_ISCHvsNF,Ischemic vs. Non-Failing,HumanHeart_ISCHvsNF.csv,HumanHeart_eset.RData,Human Gene 1.1
+HumanHeart_DCMvsNF,Dilated Cardiomyopathy vs. Non-Failing,HumanHeart_DCMvsNF.csv,HumanHeart_eset.RData, Human Gene 1.1
+HumanHeart_ISCHvsDCM,Ischemic vs. Dilated Cardiomyopathy,HumanHeart_ISCHvsDCM.csv,HumanHeart_eset.RData, Human Gene 1.1

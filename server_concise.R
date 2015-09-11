@@ -13,6 +13,7 @@ library(NMF)
 library(SPIA)
 library(shinydashboard)
 library(shinyIncubator)
+# library(BiocInstaller) # only required when packages are installed dynamically (not recommended)
 
 ###################################### global variables #####################################
 # plot height & width
@@ -58,8 +59,11 @@ shinyServer(function(input, output, session){
   # output list of projects in projects tab
   # you can only select one project at a time
   output$projects <- DT::renderDataTable({
-    DT::datatable(datainput(), 
-                  selection = 'single')
+    d <- datainput()
+    d <- d[,-c(3,4,6)]
+    DT::datatable(d, 
+                  selection = 'single',
+                  options = list(pageLength=-1))
   })
   
   ########################### Limma Output  ########################### 
@@ -166,16 +170,20 @@ shinyServer(function(input, output, session){
     }
     
     # load or install annotation package based on the selected chip 
-    package <- input$genome
-
-    if (!require(package, character.only=T, quietly=T)) {
-      source("https://bioconductor.org/biocLite.R")
-      biocLite(package, ask = F, suppressUpdates = T, suppressAutoUpdate = T)
-      library(package, character.only=T)
-    }
+    d <- datainput()
+    s <- input$projects_rows_selected
+    dat <- d[s, , drop = FALSE]
+    package <- as.character(dat$Annotation)
+    do.call(library, list(package = package, character.only = TRUE)) # load proper annotation package
+    
+#     when you want to install a package (not recommended)
+#     if(!do.call(require, list(package = package, character.only = T, quietly = T))){
+#       do.call(biocLite, list(pkgs = package, ask = F, suppressUpdates = T, suppressAutoUpdate = T))
+#       do.call(library, list(package = package, character.only = TRUE))
+#     }
     
     # chip name in format that is accepted by GOdata
-    genome.chip = sub('.db','',input$genome)
+    genome.chip = sub('.db','',dat$Annotation)
     genome.chip = paste(genome.chip,'GO2PROBE',sep='')
     genome.chip = get(genome.chip)
     

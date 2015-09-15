@@ -309,7 +309,12 @@ shinyServer(function(input, output, session){
     goid <- d[s, , drop = FALSE]
     goid <- as.character(goid$GO.ID) # go id for all selected GO terms
     GOdata <- datasetInput4() # get GOdata object
-    gogenes <- printGenes(GOdata, whichTerms = goid, geneCutOff = 500, chip = input$genome)
+    
+    dd <- datainput() # project list
+    dd.sel <- input$projects_rows_selected # get index of selected project
+    dat <- dd[dd.sel, , drop = FALSE] # only get the selected project
+    
+    gogenes <- printGenes(GOdata, whichTerms = goid, geneCutOff = 500, chip = dat$Annotation)
     if(length(goid)>1)
     {
       dd = ldply(.data = gogenes, data.frame)
@@ -492,7 +497,11 @@ shinyServer(function(input, output, session){
       need(fg, "Check Input...!!")
     )
     
-    genome.chip <- as.character(input$genome)
+    dd <- datainput() # project list
+    dd.sel <- input$projects_rows_selected # get index of selected project
+    dat <- dd[dd.sel, , drop = FALSE] # only get the selected project
+    
+    genome.chip <- as.character(dat$Annotation)
     if(length(grep('m',genome.chip))){
       org <- 'mmu'
     } else if(length(grep('h',genome.chip))){
